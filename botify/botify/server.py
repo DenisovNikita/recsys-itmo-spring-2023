@@ -16,6 +16,7 @@ from botify.recommenders.sticky_artist import StickyArtist
 from botify.recommenders.toppop import TopPop
 from botify.recommenders.indexed import Indexed
 from botify.recommenders.contextual import Contextual
+from botify.recommenders.new_way import NewWay
 from botify.track import Catalog
 
 import numpy as np
@@ -30,6 +31,7 @@ api = Api(app)
 # TODO Seminar 6 step 3: Create redis DB with tracks with diverse recommendations
 tracks_redis = Redis(app, config_prefix="REDIS_TRACKS")
 tracks_with_diverse_recs_redis = Redis(app, config_prefix="REDIS_TRACKS_WITH_DIVERSE_RECS")
+tracks_new_way_redis = Redis(app, config_prefix="REDIS_TRACKS_NEW_WAY")
 artists_redis = Redis(app, config_prefix="REDIS_ARTIST")
 recommendations_redis = Redis(app, config_prefix="REDIS_RECOMMENDATIONS")
 recommendations_ub_redis = Redis(app, config_prefix="REDIS_RECOMMENDATIONS_UB")
@@ -38,9 +40,12 @@ data_logger = DataLogger(app)
 
 # TODO Seminar 6 step 4: Upload tracks with diverse recommendations to redis DB
 catalog = Catalog(app).load(
-    app.config["TRACKS_CATALOG"], app.config["TOP_TRACKS_CATALOG"], app.config["TRACKS_WITH_DIVERSE_RECS_CATALOG"]
+    app.config["TRACKS_CATALOG"],
+    app.config["TOP_TRACKS_CATALOG"],
+    app.config["TRACKS_WITH_DIVERSE_RECS_CATALOG"],
+    app.config["NEW_WAY_TRACKS_CATALOG"]
 )
-catalog.upload_tracks(tracks_redis.connection, tracks_with_diverse_recs_redis.connection)
+catalog.upload_tracks(tracks_redis.connection, tracks_with_diverse_recs_redis.connection, tracks_new_way_redis.connection)
 catalog.upload_artists(artists_redis.connection)
 catalog.upload_recommendations(recommendations_redis.connection)
 catalog.upload_recommendations(recommendations_ub_redis.connection, "RECOMMENDATIONS_UB_FILE_PATH")
@@ -76,7 +81,7 @@ class NextTrack(Resource):
         # TODO Seminar 6 step 6: Wire RECOMMENDERS A/B experiment
         treatment = Experiments.NEW_WAY.assign(user)
         if treatment == Treatment.T1:
-            recommender = Random(tracks_redis.connection)
+            recommender = NewWay(tracks_new_way_redis.connection, catalog)
         else:
             recommender = Contextual(tracks_redis.connection, catalog)
 
