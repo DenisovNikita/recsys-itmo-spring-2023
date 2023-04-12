@@ -81,7 +81,7 @@ class NextTrack(Resource):
         # TODO Seminar 6 step 6: Wire RECOMMENDERS A/B experiment
         treatment = Experiments.NEW_WAY.assign(user)
         if treatment == Treatment.T1:
-            recommender = NewWay(tracks_new_way_redis.connection, catalog)
+            recommender = NewWay(tracks_new_way_redis.connection, catalog, tracks_with_diverse_recs_redis.connection)
         else:
             recommender = Contextual(tracks_redis.connection, catalog)
 
